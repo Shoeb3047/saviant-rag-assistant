@@ -1,0 +1,16 @@
+{
+    "name": null,
+    "input_variables": [
+        "context",
+        "question"
+    ],
+    "optional_variables": [],
+    "output_parser": null,
+    "partial_variables": {},
+    "metadata": null,
+    "tags": null,
+    "template": "\nYou are an expert assistant.\n\nUse the following context to answer the user's question.\nIf you don't know the answer, say so honestly.\n\nContext:\n{context}\n\nQuestion:\n{question}\n\nAnswer:\n\n",
+    "template_format": "f-string",
+    "validate_template": true,
+    "_type": "prompt"
+}

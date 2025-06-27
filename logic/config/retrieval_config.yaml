@@ -1,0 +1,16 @@
+version: 1.0.0
+k: 5
+llm:
+  provider: groq
+  model: llama3-8b-8192
+prompt:
+  template: prompts/rag_template_v1.json
+  template_version: v1
+
+
+vector_db:
+  type: chroma
+  persist_dir: data/vector_db     # ✅ Always relative
+  collection_name: saviant_qa_v1
+
+

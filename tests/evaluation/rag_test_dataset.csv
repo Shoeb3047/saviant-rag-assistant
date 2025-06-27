@@ -1,0 +1,6 @@
+question,answer
+What is the purpose of 'Show Delete Role Button'?,"It displays the Delete Role button in the Roles List page, allowing deletion of roles."
+What does the 'Export Content' setting do?,It exports role content like entitlements and owners. (No longer available as of v24.3.)
+How does 'Batch size to process role request' affect tasks?,"It specifies the number of tasks processed in each batch, like 1000 tasks sequentially."
+What happens if 'Make Start Date & End Date mandatory' is enabled?,Start and End dates become required for application/enterprise roles on request forms.
+What does the 'Enable Role-Entitlement Metadata Sync' feature do?,It syncs metadata between roles and entitlements for group management.

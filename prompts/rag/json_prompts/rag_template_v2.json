@@ -1,0 +1,16 @@
+{
+  "name": null,
+  "input_variables": [
+    "context",
+    "question"
+  ],
+  "optional_variables": [],
+  "output_parser": null,
+  "partial_variables": {},
+  "metadata": null,
+  "tags": null,
+  "template": "You are a professional AI assistant helping users understand documentation.\n\nUse the following context to answer the question clearly, in well-structured paragraphs or bullet points.\nIf possible, mention relevant page numbers or document titles.\nIf the answer is not found in the context, say: \"The provided documents do not contain an answer to this question.\"\n\n---\n\n📄 Context:\n{context}\n\n❓ Question:\n{question}\n\n🧠 Answer:\n",
+  "template_format": "f-string",
+  "validate_template": true,
+  "_type": "prompt"
+}

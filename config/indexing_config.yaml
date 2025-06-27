@@ -1,0 +1,10 @@
+version: 1.0.0
+data_dir: data/docs                # ✅ Always relative to project root
+doc_version: 2024-06-v1
+chunk_size: 1000
+chunk_overlap: 200
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+vector_db:
+  type: chroma
+  persist_dir: data/vector_db     # ✅ Always relative
+  collection_name: saviant_qa_v1

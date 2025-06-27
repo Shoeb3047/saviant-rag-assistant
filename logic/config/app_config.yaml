@@ -1,0 +1,23 @@
+# config/app_config.yaml
+
+app_name: saviant_ai
+frontend: html
+backend: fastapi
+port: 8002
+
+llm:
+  provider: groq
+  model: llama3-8b-8192
+
+prompt:
+  template: prompts/rag_template_v2.json
+  version: v1
+
+vector_db:
+  type: chroma
+  persist_dir: data/vector_db
+  collection_name: saviant_qa_v1
+
+retrieval:
+  k: 5
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
