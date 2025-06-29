@@ -21,7 +21,6 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 sh """
-                    set -e
                     python3 -m venv "${WORKSPACE}/.venv" --clear
                     ${env.PIP_PATH} install --upgrade pip==23.3.2
                     ${env.PIP_PATH} install "protobuf==3.20.3" --force-reinstall
@@ -49,19 +48,22 @@ pipeline {
             }
         }
 
-        stage('Docker Login & Build') {
-            when {
-                expression {
-                    sh(script: "command -v ${env.DOCKER_PATH}", returnStatus: true) == 0
-                }
+        stage('Build Docker Images') {
+            when { 
+                expression { 
+                    sh(script: "command -v ${env.DOCKER_PATH}", returnStatus: true) == 0 
+                } 
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "$DOCKER_PASS" | DOCKER_CONFIG=/tmp/docker-config ${env.DOCKER_PATH} login -u "$DOCKER_USER" --password-stdin
-                        ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker frontend build failed but continuing"
-                        ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker backend build failed but continuing"
-                    """
+                    sh '''
+                        mkdir -p /tmp/docker-config
+                        echo '{ "auths": {}, "credsStore": "" }' > /tmp/docker-config/config.json
+                        echo "$DOCKER_PASS" | DOCKER_CONFIG=/tmp/docker-config docker login -u "$DOCKER_USER" --password-stdin
+
+                        DOCKER_CONFIG=/tmp/docker-config docker build -t $FRONTEND_IMAGE ./frontend/app || echo "Docker frontend build failed but continuing"
+                        DOCKER_CONFIG=/tmp/docker-config docker build -t $BACKEND_IMAGE ./backend/rag_service_api || echo "Docker backend build failed but continuing"
+                    '''
                 }
             }
         }
