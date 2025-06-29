@@ -49,17 +49,20 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
-            when { 
-                expression { 
-                    sh(script: "command -v ${env.DOCKER_PATH}", returnStatus: true) == 0 
-                } 
+        stage('Docker Login & Build') {
+            when {
+                expression {
+                    sh(script: "command -v ${env.DOCKER_PATH}", returnStatus: true) == 0
+                }
             }
             steps {
-                sh """
-                    ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker build failed but continuing"
-                    ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker build failed but continuing"
-                """
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "$DOCKER_PASS" | ${env.DOCKER_PATH} login -u "$DOCKER_USER" --password-stdin
+                        ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker frontend build failed but continuing"
+                        ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker backend build failed but continuing"
+                    """
+                }
             }
         }
     }
