@@ -58,7 +58,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
-                        echo "$DOCKER_PASS" | ${env.DOCKER_PATH} login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | DOCKER_CONFIG=/tmp/docker-config ${env.DOCKER_PATH} login -u "$DOCKER_USER" --password-stdin
                         ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker frontend build failed but continuing"
                         ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker backend build failed but continuing"
                     """
