@@ -2,9 +2,9 @@ pipeline {
   agent any
 
   environment {
-    // Set default paths based on your local environment
-    PYTHON_PATH = '/opt/homebrew/bin/python3'
-    PIP_PATH = '/opt/homebrew/bin/pip3'
+    // Use virtualenv paths instead of system Python
+    PYTHON_PATH = "${WORKSPACE}/.venv/bin/python3"
+    PIP_PATH = "${WORKSPACE}/.venv/bin/pip3"
     DOCKER_PATH = '/usr/local/bin/docker'
     COMMIT_HASH = ''
     FRONTEND_IMAGE = ''
@@ -15,25 +15,11 @@ pipeline {
     stage('Verify Dependencies') {
       steps {
         script {
-          // Check Python
-          def pythonExists = sh(script: "command -v ${env.PYTHON_PATH} || command -v python3 || command -v python", returnStatus: true) == 0
-          if (!pythonExists) {
-            error("❌ Python not found. Install with: brew install python")
-          }
-
-          // Check Pip
-          def pipExists = sh(script: "command -v ${env.PIP_PATH} || command -v pip3 || command -v pip", returnStatus: true) == 0
-          if (!pipExists) {
-            error("❌ Pip not found. Install with: curl https://bootstrap.pypa.io/get-pip.py | python3")
-          }
-
-          // Check Docker (only warn if missing)
+          // Check if Docker exists (optional)
           def dockerExists = sh(script: "command -v ${env.DOCKER_PATH} || command -v docker", returnStatus: true) == 0
           if (!dockerExists) {
             echo "⚠️  Docker not found. Image building will be skipped."
           }
-
-          echo "✅ All required dependencies are available"
         }
       }
     }
@@ -42,24 +28,34 @@ pipeline {
       steps {
         git branch: 'main', 
              url: 'https://github.com/Shoeb3047/saviant-rag-assistant.git',
-             credentialsId: 'github-pat'  // Use your credential ID
+             credentialsId: 'github-pat'
+      }
+    }
+
+    stage('Setup Python Environment') {
+      steps {
+        script {
+          // Create virtual environment
+          sh """
+            python3 -m venv "${WORKSPACE}/.venv"
+            ${env.PIP_PATH} install --upgrade pip uv
+          """
+        }
       }
     }
 
     stage('Assign Variables') {
       steps {
         script {
-          // Get commit hash with fallback
+          // Get commit hash properly
           env.COMMIT_HASH = sh(
-            script: 'git rev-parse --short HEAD || echo "no-commit"', 
+            script: 'git rev-parse --short HEAD', 
             returnStdout: true
           ).trim()
           
-          // Set image names
           env.FRONTEND_IMAGE = "saviant-rag-micro-frontend:${env.COMMIT_HASH}"
           env.BACKEND_IMAGE = "saviant-rag-micro-rag_service:${env.COMMIT_HASH}"
           
-          // Print debug info
           echo """
           🏷️  Build Information:
           🔧 COMMIT_HASH: ${env.COMMIT_HASH}
@@ -73,18 +69,10 @@ pipeline {
     stage('Run Tests') {
       steps {
         script {
-          try {
-            // Use uv if available, fallback to pip
-            sh """
-              ${env.PIP_PATH} install --quiet --upgrade uv pip
-              uv pip install -r requirements.txt || \
-              ${env.PIP_PATH} install -r requirements.txt
-              
-              ${env.PYTHON_PATH} tests/evaluation/run_rag_eval.py
-            """
-          } catch (Exception e) {
-            error("❌ Tests failed: ${e.getMessage()}")
-          }
+          sh """
+            ${env.PIP_PATH} install -r requirements.txt
+            ${env.PYTHON_PATH} tests/evaluation/run_rag_eval.py
+          """
         }
       }
     }
@@ -97,14 +85,10 @@ pipeline {
       }
       steps {
         script {
-          try {
-            sh """
-              ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app
-              ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api
-            """
-          } catch (Exception e) {
-            echo "⚠️  Docker build failed: ${e.getMessage()}"
-          }
+          sh """
+            docker build -t ${env.FRONTEND_IMAGE} ./frontend/app
+            docker build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api
+          """
         }
       }
     }
@@ -136,11 +120,11 @@ pipeline {
     }
     failure {
       echo "❌ Pipeline failed. Check logs for details."
-      // Optional: Send failure notification
     }
     cleanup {
       echo "🧹 Cleaning up workspace..."
-      // Optional: Add cleanup steps
+      // Clean up virtualenv if needed
+      sh 'rm -rf "${WORKSPACE}/.venv" || true'
     }
   }
 }
