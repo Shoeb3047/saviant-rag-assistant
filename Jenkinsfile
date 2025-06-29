@@ -17,7 +17,8 @@ pipeline {
     stage('Assign and Echo Variables') {
       steps {
         script {
-          env.COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+          def hash = sh(script: 'git rev-parse --short HEAD || echo "no-git"', returnStdout: true).trim()
+          env.COMMIT_HASH = hash
           env.FRONTEND_IMAGE = "saviant-rag-micro-frontend:${env.COMMIT_HASH}"
           env.BACKEND_IMAGE = "saviant-rag-micro-rag_service:${env.COMMIT_HASH}"
         }
@@ -29,16 +30,14 @@ pipeline {
     }
 
     stage('Run Tests') {
-      agent {
-        docker {
-          image 'python:3.10-slim'
-          args '-u root'
-        }
-      }
       steps {
         sh '''
-          pip install uv
-          uv pip install -r requirements.txt
+          if ! command -v pip &>/dev/null; then
+            echo "pip not found"; exit 1;
+          fi
+
+          pip install uv || python3 -m pip install uv
+          uv pip install -r requirements.txt || pip install -r requirements.txt
           python tests/evaluation/run_rag_eval.py
         '''
       }
@@ -46,16 +45,21 @@ pipeline {
 
     stage('Build Docker Images') {
       steps {
-        sh """
-          docker build -t ${env.FRONTEND_IMAGE} ./frontend/app
-          docker build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api
-        """
+        sh '''
+          if ! command -v docker &>/dev/null; then
+            echo "Docker not installed. Skipping image build."
+            exit 1
+          fi
+
+          docker build -t ${FRONTEND_IMAGE} ./frontend/app
+          docker build -t ${BACKEND_IMAGE} ./backend/rag_service_api
+        '''
       }
     }
 
     stage('(Optional) Push to GCR') {
       when {
-        expression { return false }
+        expression { return false } // enable manually when needed
       }
       steps {
         echo "🛑 Skipping push to GCR."
