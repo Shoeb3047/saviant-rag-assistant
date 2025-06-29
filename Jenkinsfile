@@ -18,14 +18,13 @@ pipeline {
             }
         }
 
-        stage('Setup Environment') {
+        stage('Setup Python Environment') {
             steps {
                 sh """
-                    set -e
                     python3 -m venv "${WORKSPACE}/.venv" --clear
                     ${env.PIP_PATH} install --upgrade pip==23.3.2
-                    ${env.PIP_PATH} install "protobuf==3.20.3" --force-reinstall
-                    ${env.PIP_PATH} install "chromadb==0.4.15" --no-deps
+                    ${env.PIP_PATH} install protobuf==3.20.3 --force-reinstall
+                    ${env.PIP_PATH} install chromadb==0.4.15 --no-deps
                 """
             }
         }
@@ -51,11 +50,13 @@ pipeline {
 
         stage('Docker Login') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-creds',  // ✅ Corrected here
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
-                        mkdir -p /tmp/docker-config
-                        echo '{ "auths": {}, "credsStore": "" }' > /tmp/docker-config/config.json
-                        echo "$DOCKER_PASS" | DOCKER_CONFIG=/tmp/docker-config docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
@@ -63,12 +64,12 @@ pipeline {
 
         stage('Build Docker Images') {
             environment {
-                DOCKER_BUILDKIT = '0'
+                DOCKER_BUILDKIT = '0'  // Disable BuildKit to avoid credential helper issues
             }
             steps {
                 sh """
-                    ${env.DOCKER_PATH} build --no-cache -t ${env.FRONTEND_IMAGE} ./frontend/app || echo 'Docker frontend build failed but continuing'
-                    ${env.DOCKER_PATH} build --no-cache -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo 'Docker backend build failed but continuing'
+                    ${env.DOCKER_PATH} build --no-cache -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker frontend build failed"
+                    ${env.DOCKER_PATH} build --no-cache -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker backend build failed"
                 """
             }
         }
@@ -76,16 +77,14 @@ pipeline {
 
     post {
         always {
-            script {
-                sh "rm -rf \"${WORKSPACE}/.venv\""
-            }
+            sh 'rm -rf "${WORKSPACE}/.venv"'
             echo "Pipeline execution completed"
         }
         success {
             echo """
-            ✅ Successfully built:
-            Frontend: ${env.FRONTEND_IMAGE}
-            Backend: ${env.BACKEND_IMAGE}
+            ✅ Successfully built Docker images:
+            - Frontend: ${env.FRONTEND_IMAGE}
+            - Backend:  ${env.BACKEND_IMAGE}
             """
         }
     }
