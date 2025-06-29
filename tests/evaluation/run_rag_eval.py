@@ -7,8 +7,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # Setup project root path
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
+print(project_root)
+from backend.rag_service_api.rag_service.logic.rag_pipeline import RAGPipeline
 
-from logic.rag_pipeline import RAGPipeline
+# from logic.rag_pipeline import RAGPipeline
 from langsmith import traceable
 from langsmith import Client
 client = Client()
