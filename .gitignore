@@ -1,20 +1,11 @@
-# Python-generated files
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-
 .env
-*.pyc
-__pycache__/
 .DS_Store
-.venv/
-langchain.db
-chroma.db/
-outputs/
+*.pyc
+*.pyo
+*.log
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+*.sqlite3

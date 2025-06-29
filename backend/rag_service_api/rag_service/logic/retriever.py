@@ -1,5 +1,5 @@
-from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 
 def get_retriever(
     persist_dir: str,
