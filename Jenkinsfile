@@ -10,25 +10,37 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', credentialsId: 'github-pat', url: 'https://github.com/Shoeb3047/saviant-rag-assistant.git'
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: '*/main']],
+          userRemoteConfigs: [[
+            url: 'https://github.com/Shoeb3047/saviant-rag-assistant.git',
+            credentialsId: 'github-pat'
+          ]]
+        ])
       }
     }
 
     stage('Assign and Echo Variables') {
       steps {
         script {
-          env.COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-          env.FRONTEND_IMAGE = "saviant-rag-micro-frontend:${env.COMMIT_HASH}"
-          env.BACKEND_IMAGE = "saviant-rag-micro-rag_service:${env.COMMIT_HASH}"
+          COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+          env.FRONTEND_IMAGE = "saviant-rag-micro-frontend:${COMMIT_HASH}"
+          env.BACKEND_IMAGE = "saviant-rag-micro-rag_service:${COMMIT_HASH}"
+          echo "🔧 COMMIT_HASH: ${COMMIT_HASH}"
+          echo "📦 FRONTEND_IMAGE: ${env.FRONTEND_IMAGE}"
+          echo "📦 BACKEND_IMAGE: ${env.BACKEND_IMAGE}"
         }
-
-        echo "🔧 COMMIT_HASH: ${env.COMMIT_HASH}"
-        echo "📦 FRONTEND_IMAGE: ${env.FRONTEND_IMAGE}"
-        echo "📦 BACKEND_IMAGE: ${env.BACKEND_IMAGE}"
       }
     }
 
     stage('Run Tests') {
+      agent {
+        docker {
+          image 'python:3.10-slim'
+          args '-u root'
+        }
+      }
       steps {
         sh '''
           pip install uv
@@ -49,7 +61,7 @@ pipeline {
 
     stage('(Optional) Push to GCR') {
       when {
-        expression { return false } // set to true when needed
+        expression { return false }
       }
       steps {
         echo "Skipping push to GCR for now."
