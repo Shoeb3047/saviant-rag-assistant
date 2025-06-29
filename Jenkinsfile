@@ -10,7 +10,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'https://github.com/Shoeb3047/saviant-rag-micro.git'
+        git branch: 'main', credentialsId: 'github-pat', url: 'https://github.com/Shoeb3047/saviant-rag-assistant.git'
       }
     }
 
