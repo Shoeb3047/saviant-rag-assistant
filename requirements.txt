@@ -1,7 +1,7 @@
-fastapi 
-uvicorn 
-python-socketio 
-openai 
+fastapi
+uvicorn
+python-socketio
+openai
 python-dotenv
 langgraph
 langchain
