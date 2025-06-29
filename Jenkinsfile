@@ -4,7 +4,7 @@ pipeline {
     environment {
         PYTHON_PATH = "${WORKSPACE}/.venv/bin/python3"
         PIP_PATH = "${WORKSPACE}/.venv/bin/pip3"
-        DOCKER_PATH = '/usr/local/bin/docker'
+        DOCKER_PATH = sh(script: 'command -v docker', returnStdout: true).trim()
     }
 
     stages {
@@ -48,23 +48,28 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
-            when { 
-                expression { 
-                    sh(script: "command -v ${env.DOCKER_PATH}", returnStatus: true) == 0 
-                } 
-            }
+        stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
+                    sh """
                         mkdir -p /tmp/docker-config
                         echo '{ "auths": {}, "credsStore": "" }' > /tmp/docker-config/config.json
-                        echo "$DOCKER_PASS" | DOCKER_CONFIG=/tmp/docker-config docker login -u "$DOCKER_USER" --password-stdin
 
-                        DOCKER_CONFIG=/tmp/docker-config docker build -t $FRONTEND_IMAGE ./frontend/app || echo "Docker frontend build failed but continuing"
-                        DOCKER_CONFIG=/tmp/docker-config docker build -t $BACKEND_IMAGE ./backend/rag_service_api || echo "Docker backend build failed but continuing"
-                    '''
+                        echo "\$DOCKER_PASS" | ${env.DOCKER_PATH} login -u "\$DOCKER_USER" --password-stdin
+                    """
                 }
+            }
+        }
+
+        stage('Build Docker Images') {
+            environment {
+                DOCKER_CONFIG = "/tmp/docker-config"
+            }
+            steps {
+                sh """
+                    ${env.DOCKER_PATH} build --no-cache -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker frontend build failed but continuing"
+                    ${env.DOCKER_PATH} build --no-cache -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker backend build failed but continuing"
+                """
             }
         }
     }
