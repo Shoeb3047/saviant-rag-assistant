@@ -90,3 +90,56 @@ pipeline {
     }
   }
 }
+pipeline {
+  agent any
+
+  environment {
+    PYTHON_PATH = "${WORKSPACE}/.venv/bin/python3"
+    PIP_PATH = "${WORKSPACE}/.venv/bin/pip3"
+    COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+  }
+
+  stages {
+    stage('Setup Isolated Environment') {
+      steps {
+        sh """
+          # Create fresh virtual environment
+          python3 -m venv "${WORKSPACE}/.venv" --clear
+          
+          # Install critical packages FIRST in correct order
+          ${env.PIP_PATH} install --upgrade pip==23.3.2
+          ${env.PIP_PATH} install "protobuf==3.20.3" --force-reinstall
+          ${env.PIP_PATH} install "opentelemetry-api<1.20.0"  # Known compatible version
+          
+          # Install chromadb with pinned dependencies
+          ${env.PIP_PATH} install "chromadb==0.4.15" \
+            --no-deps \  # Prevent automatic dependency resolution
+            --force-reinstall
+        """
+      }
+    }
+
+    stage('Install Requirements') {
+      steps {
+        sh """
+          # Install remaining requirements with version constraints
+          ${env.PIP_PATH} install -r requirements.txt \
+            --constraint <(echo "protobuf==3.20.3") \
+            --constraint <(echo "opentelemetry-api<1.20.0")
+        """
+      }
+    }
+
+    stage('Run Tests') {
+      environment {
+        PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION = 'python'
+        LANGCHAIN_API_KEY = ''  # Explicitly disable if not needed
+      }
+      steps {
+        sh """
+          ${env.PYTHON_PATH} -W ignore::UserWarning tests/evaluation/run_rag_eval.py
+        """
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-
+import chromadb
 load_dotenv()
 
 
@@ -52,21 +52,21 @@ examples = [
 
 
 # CSV data set 
-csv_file = '/Users/shoeb/Desktop/clients_apps/saviant_app/tests/evaluation/rag_test_dataset.csv'
+# csv_file = '/Users/shoeb/Desktop/clients_apps/saviant_app/tests/evaluation/rag_test_dataset.csv'
 
-# The CSV contains two columns: question and answer
-input_keys = ['question']
-output_keys = ['answer']
+# # The CSV contains two columns: question and answer
+# input_keys = ['question']
+# output_keys = ['answer']
 
-dataset = client.upload_csv(
-    csv_file=csv_file,
-    input_keys=input_keys,
-    output_keys=output_keys,
-    name="Saviant RAG Test Dataset",
-    description="Test dataset created from role configuration PDF",
-    # metadata={"tag": "SaviantTestSet", "source": "csv-upload", "purpose": "evaluation"},
-    data_type="kv"
-)
+# dataset = client.upload_csv(
+#     csv_file=csv_file,
+#     input_keys=input_keys,
+#     output_keys=output_keys,
+#     name="Saviant RAG Test Dataset",
+#     description="Test dataset created from role configuration PDF",
+#     # metadata={"tag": "SaviantTestSet", "source": "csv-upload", "purpose": "evaluation"},
+#     data_type="kv"
+# )
 
 
 
