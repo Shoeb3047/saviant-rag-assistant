@@ -2,20 +2,30 @@ pipeline {
     agent any
 
     environment {
-        UV_PYTHON = "${WORKSPACE}/.venv/bin/python3"
-        UV_BIN = "${WORKSPACE}/.venv/bin/uv"
+        PYTHON_PATH = "${WORKSPACE}/.venv/bin/python3"
+        PIP_PATH = "${WORKSPACE}/.venv/bin/pip3"
         DOCKER_PATH = '/usr/local/bin/docker'
-        COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        FRONTEND_IMAGE = "saviant-rag-micro-frontend:${env.COMMIT_HASH}"
-        BACKEND_IMAGE = "saviant-rag-micro-rag_service:${env.COMMIT_HASH}"
     }
 
     stages {
+        stage('Get Commit Hash') {
+            steps {
+                script {
+                    env.COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.FRONTEND_IMAGE = "saviant-rag-micro-frontend:${env.COMMIT_HASH}"
+                    env.BACKEND_IMAGE = "saviant-rag-micro-rag_service:${env.COMMIT_HASH}"
+                }
+            }
+        }
+
         stage('Setup Environment') {
             steps {
                 sh """
-                    # Create a new uv-based virtual environment
-                    uv venv .venv
+                    set -e
+                    python3 -m venv "${WORKSPACE}/.venv" --clear
+                    ${env.PIP_PATH} install --upgrade pip==23.3.2
+                    ${env.PIP_PATH} install "protobuf==3.20.3" --force-reinstall
+                    ${env.PIP_PATH} install "chromadb==0.4.15" --no-deps
                 """
             }
         }
@@ -23,8 +33,7 @@ pipeline {
         stage('Install Requirements') {
             steps {
                 sh """
-                    # Install requirements using uv inside the venv
-                    ${env.UV_BIN} pip install -r requirements.txt
+                    ${env.PIP_PATH} install -r requirements.txt
                 """
             }
         }
@@ -35,7 +44,7 @@ pipeline {
             }
             steps {
                 sh """
-                    ${env.UV_PYTHON} -W ignore tests/evaluation/run_rag_eval.py
+                    ${env.PYTHON_PATH} -W ignore tests/evaluation/run_rag_eval.py
                 """
             }
         }
@@ -47,20 +56,17 @@ pipeline {
                 } 
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker build failed but continuing"
-                        ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker build failed but continuing"
-                    """
-                }
+                sh """
+                    ${env.DOCKER_PATH} build -t ${env.FRONTEND_IMAGE} ./frontend/app || echo "Docker build failed but continuing"
+                    ${env.DOCKER_PATH} build -t ${env.BACKEND_IMAGE} ./backend/rag_service_api || echo "Docker build failed but continuing"
+                """
             }
         }
     }
 
     post {
         always {
-            sh 'rm -rf .venv'
+            sh "rm -rf \"${WORKSPACE}/.venv\""
             echo "Pipeline execution completed"
         }
         success {
