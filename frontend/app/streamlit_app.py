@@ -6,7 +6,7 @@ import os
 backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="Saviant RAG Assistant", layout="wide")
-st.title("💬 Saviant RAG Chatbot")
+st.title("💬 Saviynt RAG Chatbot")
 
 query = st.text_input("🔍 Ask your question:")
 
@@ -26,3 +26,4 @@ if query:
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
+

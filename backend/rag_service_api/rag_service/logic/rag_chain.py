@@ -50,21 +50,21 @@ def build_chain(config):
     return parallel_chain | prompt | llm | StrOutputParser()
 
 
-if __name__ =="__main__":
-    # these values should come from yaml files in future 
-    # prompt_path = "/Users/shoeb/Desktop/VS_Code/LLMOpps/rag_bot/prompts/rag_qa_template.json"
-    # persist_dir="/Users/shoeb/Desktop/VS_Code/LLMOpps/rag_bot/rag_vector_databases"
-    # collection_name="rag_bot_vector_db_v1"
-    # k=5
+# if __name__ =="__main__":
+#     # these values should come from yaml files in future 
+#     # prompt_path = "/Users/shoeb/Desktop/VS_Code/LLMOpps/rag_bot/prompts/rag_qa_template.json"
+#     # persist_dir="/Users/shoeb/Desktop/VS_Code/LLMOpps/rag_bot/rag_vector_databases"
+#     # collection_name="rag_bot_vector_db_v1"
+#     # k=5
     
-    config = load_config("config/retreival.yaml")
-    chain = build_chain(config)
+#     config = load_config("config/retreival.yaml")
+#     chain = build_chain(config)
     
     
-    # test main chain 
-    result = chain.invoke("What is Agentic AI? Summarize in 5 points.")
+#     # test main chain 
+#     result = chain.invoke("What is Agentic AI? Summarize in 5 points.")
     
-    print(result)
+#     print(result)
     
 
 
